@@ -1,0 +1,6 @@
+{
+  "name": "Spotlight Stocks: Market Titan",
+  "description": "The definitive Wall Street career and financial titan life simulator. Climb from bedroom retail trader to hedge fund legend, conquer volatile markets, crush rival billionaires, survive SEC scandals, and rule the WallRich list.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
