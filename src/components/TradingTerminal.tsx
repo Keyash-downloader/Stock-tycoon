@@ -17,7 +17,9 @@ import {
   Bell,
   BellRing,
   Trash2,
-  Target
+  Target,
+  Star,
+  X
 } from 'lucide-react';
 import { Stock, Position, OptionContract, Sector, NetWorthSnapshot, MarketBriefing, PriceAlert } from '../types/game';
 import { NetWorthD3Chart } from './NetWorthD3Chart';
@@ -96,6 +98,40 @@ export const TradingTerminal: React.FC<TradingTerminalProps> = ({
   const [optionType, setOptionType] = useState<'CALL' | 'PUT'>('CALL');
   const [contractsCount, setContractsCount] = useState<number>(1);
 
+  // Daily Watchlist (Pinned Focus Stocks) State
+  const [pinnedSymbols, setPinnedSymbols] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('spotlight_pinned_symbols');
+      return saved ? JSON.parse(saved) : ['NVX', 'MEME', 'CYBER'];
+    } catch {
+      return ['NVX', 'MEME', 'CYBER'];
+    }
+  });
+
+  const handleTogglePin = (symbol: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPinnedSymbols((prev) => {
+      const next = prev.includes(symbol)
+        ? prev.filter((s) => s !== symbol)
+        : [...prev, symbol];
+      try {
+        localStorage.setItem('spotlight_pinned_symbols', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleUnpinStock = (symbol: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPinnedSymbols((prev) => {
+      const next = prev.filter((s) => s !== symbol);
+      try {
+        localStorage.setItem('spotlight_pinned_symbols', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
   // Sync with selectedStockSymbol if provided externally
   React.useEffect(() => {
     if (selectedStockSymbol && selectedStockSymbol !== selectedSymbol) {
@@ -105,6 +141,9 @@ export const TradingTerminal: React.FC<TradingTerminalProps> = ({
 
   const currentStock = stocks.find((s) => s.symbol === selectedSymbol) || stocks[0];
   const activePosition = positions.find((p) => p.symbol === selectedSymbol);
+
+  const pinnedStocks = stocks.filter((s) => pinnedSymbols.includes(s.symbol));
+  const isCurrentStockPinned = pinnedSymbols.includes(currentStock.symbol);
 
   const filteredStocks = selectedSector === 'ALL' 
     ? stocks 
@@ -217,14 +256,93 @@ export const TradingTerminal: React.FC<TradingTerminalProps> = ({
 
       {/* Main Terminal Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column: Watchlist (4 cols) */}
+        {/* Left Column: Daily Watchlist & Market Tickers (4 cols) */}
         <div className="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col h-[680px]">
-          <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-800/80 mb-2">
+          {/* 1. Daily Watchlist (Pinned Focus Section) */}
+          <div className="mb-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                Daily Watchlist
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 font-bold">
+                {pinnedStocks.length} Pinned
+              </span>
+            </div>
+
+            {pinnedStocks.length === 0 ? (
+              <div className="p-3 rounded-xl bg-slate-950/40 border border-dashed border-slate-800 text-center text-xs text-slate-500">
+                <span>Click the star icon on any stock to pin it to your Daily Watchlist.</span>
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin">
+                {pinnedStocks.map((stock) => {
+                  const isSelected = stock.symbol === selectedSymbol;
+                  const isUp = stock.changePercent >= 0;
+                  const hasPosition = positions.some((p) => p.symbol === stock.symbol);
+
+                  return (
+                    <div
+                      key={`pinned_${stock.symbol}`}
+                      onClick={() => {
+                        setSelectedSymbol(stock.symbol);
+                        onSelectStockSymbol?.(stock.symbol);
+                      }}
+                      className={`group p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-amber-500/15 via-slate-800 to-slate-800 border-amber-500/50 shadow-md shadow-amber-500/5'
+                          : 'bg-slate-950/60 border-amber-500/20 hover:bg-slate-800/60 hover:border-amber-500/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-slate-100 text-xs tracking-tight">${stock.symbol}</span>
+                            {hasPosition && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Active Position" />
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 truncate max-w-[105px]">{stock.name}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="font-bold text-slate-100 text-xs tabular-nums">
+                            {formatCurrency(stock.price)}
+                          </div>
+                          <div
+                            className={`text-[10px] font-bold tabular-nums flex items-center justify-end gap-0.5 ${
+                              isUp ? 'text-emerald-400' : 'text-rose-400'
+                            }`}
+                          >
+                            {isUp ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                          </div>
+                        </div>
+
+                        {/* Quick-remove button */}
+                        <button
+                          onClick={(e) => handleUnpinStock(stock.symbol, e)}
+                          className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
+                          title="Remove from Daily Watchlist"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 2. All Tickers / Filtered Sectors */}
+          <div className="flex items-center justify-between px-1 pb-1.5 border-b border-slate-800/80 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              Watchlist
+              All Tickers
             </span>
-            <span className="text-[10px] text-slate-500">{filteredStocks.length} Tickers</span>
+            <span className="text-[10px] text-slate-500">{filteredStocks.length} Total</span>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
@@ -232,30 +350,47 @@ export const TradingTerminal: React.FC<TradingTerminalProps> = ({
               const isSelected = stock.symbol === selectedSymbol;
               const isUp = stock.changePercent >= 0;
               const hasPosition = positions.some((p) => p.symbol === stock.symbol);
+              const isPinned = pinnedSymbols.includes(stock.symbol);
 
               return (
                 <div
                   key={stock.symbol}
-                  onClick={() => setSelectedSymbol(stock.symbol)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                  onClick={() => {
+                    setSelectedSymbol(stock.symbol);
+                    onSelectStockSymbol?.(stock.symbol);
+                  }}
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                     isSelected
                       ? 'bg-slate-800 border-emerald-500/50 shadow-lg shadow-emerald-500/5'
                       : 'bg-slate-950/50 border-slate-800/60 hover:bg-slate-800/40 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-100 text-sm">{stock.symbol}</span>
-                      {stock.isHot && (
-                        <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1 rounded flex items-center gap-0.5">
-                          <Flame className="w-2.5 h-2.5" /> HOT
-                        </span>
-                      )}
-                      {hasPosition && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-400" title="Active Position" />
-                      )}
+                  <div className="flex items-center gap-2">
+                    {/* Pin/Unpin Star Button */}
+                    <button
+                      onClick={(e) => handleTogglePin(stock.symbol, e)}
+                      className={`p-1 rounded transition cursor-pointer ${
+                        isPinned ? 'text-amber-400 hover:text-amber-300' : 'text-slate-600 hover:text-slate-300'
+                      }`}
+                      title={isPinned ? 'Unpin from Daily Watchlist' : 'Pin to Daily Watchlist'}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />
+                    </button>
+
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-100 text-sm">{stock.symbol}</span>
+                        {stock.isHot && (
+                          <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1 rounded flex items-center gap-0.5">
+                            <Flame className="w-2.5 h-2.5" /> HOT
+                          </span>
+                        )}
+                        {hasPosition && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400" title="Active Position" />
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{stock.name}</span>
                     </div>
-                    <span className="text-[11px] text-slate-400 truncate max-w-[140px]">{stock.name}</span>
                   </div>
 
                   <div className="text-right">
@@ -308,15 +443,28 @@ export const TradingTerminal: React.FC<TradingTerminalProps> = ({
                   {currentStock.changePercent >= 0 ? '+' : ''}{currentStock.changePercent.toFixed(2)}% this week
                 </div>
 
-                {/* Price Alert Action Buttons */}
+                {/* Stock Quick Action Buttons: Daily Watchlist Pin & Price Alerts */}
                 <div className="flex items-center justify-end gap-2 mt-2">
+                  <button
+                    onClick={() => handleTogglePin(currentStock.symbol)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm ${
+                      isCurrentStockPinned
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:text-white'
+                    }`}
+                    title={isCurrentStockPinned ? `Remove ${currentStock.symbol} from Daily Watchlist` : `Pin ${currentStock.symbol} to Daily Watchlist`}
+                  >
+                    <Star className={`w-3.5 h-3.5 ${isCurrentStockPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />
+                    <span>{isCurrentStockPinned ? 'Pinned' : 'Pin to Watchlist'}</span>
+                  </button>
+
                   <button
                     onClick={handleOpenAlertModal}
                     className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
                     title={`Set Target Price Alert for ${currentStock.symbol}`}
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    <span>Set Price Alert</span>
+                    <span>Set Alert</span>
                     {activeAlertsForCurrentStock.length > 0 && (
                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse ml-0.5" />
                     )}

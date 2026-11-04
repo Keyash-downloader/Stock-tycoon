@@ -1,13 +1,20 @@
 import React from 'react';
-import { Play, TrendingUp, ShieldAlert, Award, Volume2, VolumeX, Sparkles, DollarSign } from 'lucide-react';
+import { Play, TrendingUp, ShieldAlert, Award, Volume2, VolumeX, Sparkles, DollarSign, Swords, Smartphone } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface TitleScreenProps {
   onStartGame: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  onOpenPublishModal?: () => void;
 }
 
-export const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, isMuted, onToggleMute }) => {
+export const TitleScreen: React.FC<TitleScreenProps> = ({ 
+  onStartGame, 
+  isMuted, 
+  onToggleMute,
+  onOpenPublishModal 
+}) => {
   return (
     <div className="relative w-full h-screen bg-[#070b14] text-slate-100 flex flex-col justify-between overflow-hidden select-none">
       {/* Background Matrix / Candlestick Grid Animation */}
@@ -42,9 +49,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, isMuted, 
         </div>
 
         <div className="flex items-center gap-3">
+          {onOpenPublishModal && (
+            <button
+              onClick={onOpenPublishModal}
+              className="px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              title="Publish on App Store & Google Play Store"
+            >
+              <Smartphone className="w-4 h-4 text-indigo-400" />
+              <span>App Stores</span>
+            </button>
+          )}
+
+          <PWAInstallButton variant="full" />
           <button
             onClick={onToggleMute}
-            className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition"
+            className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer"
             title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
           >
             {isMuted ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-emerald-400" />}
@@ -54,6 +73,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStartGame, isMuted, 
 
       {/* Hero Centerpiece & Bespoke Title Lockup */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 max-w-4xl mx-auto">
+        {/* Live Multiplayer Badge */}
+        <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold uppercase tracking-wider shadow-sm animate-pulse">
+          <Swords className="w-3.5 h-3.5" />
+          <span>Real-Time Multiplayer Trading Pit Online</span>
+        </div>
+
         {/* Bespoke SVG Title Lockup */}
         <div className="mb-4">
           <svg className="w-80 sm:w-96 md:w-[480px] h-auto mx-auto" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">

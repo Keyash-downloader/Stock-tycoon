@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Briefcase, 
@@ -12,17 +12,22 @@ import {
   Zap, 
   ChevronRight,
   ShieldAlert,
-  Flame
+  Flame,
+  ArrowUp,
+  Swords,
+  Smartphone
 } from 'lucide-react';
 import { TraderProfile } from '../types/game';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderHUDProps {
   profile: TraderProfile;
-  activeTab: 'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE';
-  onSelectTab: (tab: 'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE') => void;
+  activeTab: 'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE' | 'ARENA';
+  onSelectTab: (tab: 'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE' | 'ARENA') => void;
   onAdvanceWeek: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  onOpenPublishModal?: () => void;
 }
 
 export const HeaderHUD: React.FC<HeaderHUDProps> = ({
@@ -32,7 +37,29 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
   onAdvanceWeek,
   isMuted,
   onToggleMute,
+  onOpenPublishModal,
 }) => {
+  const prevPortfolioRef = useRef<number>(profile.portfolioValue);
+  const [isPulsing, setIsPulsing] = useState<boolean>(false);
+  const [recentGain, setRecentGain] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (profile.portfolioValue > prevPortfolioRef.current) {
+      const gain = profile.portfolioValue - prevPortfolioRef.current;
+      setRecentGain(gain);
+      setIsPulsing(true);
+
+      const timer = setTimeout(() => {
+        setIsPulsing(false);
+        setRecentGain(null);
+      }, 1800);
+
+      prevPortfolioRef.current = profile.portfolioValue;
+      return () => clearTimeout(timer);
+    }
+    prevPortfolioRef.current = profile.portfolioValue;
+  }, [profile.portfolioValue]);
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -94,9 +121,27 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
             <span className="font-bold text-emerald-400 text-sm">{formatCurrency(profile.cash)}</span>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Portfolio</span>
-            <span className="font-bold text-sky-400 text-sm">{formatCurrency(profile.portfolioValue)}</span>
+          {/* Animated Total Portfolio Display with Settlement Green Pulse */}
+          <div 
+            className={`transition-all duration-300 px-3 py-1.5 rounded-lg flex flex-col relative ${
+              isPulsing 
+                ? 'animate-portfolio-pulse text-emerald-300 ring-2 ring-emerald-400/50' 
+                : 'bg-slate-900/80 border border-slate-800'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1.5">
+              <span className={`text-[10px] uppercase tracking-wider font-semibold ${isPulsing ? 'text-emerald-400' : 'text-slate-500'}`}>
+                Portfolio
+              </span>
+              {isPulsing && recentGain !== null && (
+                <span className="text-[10px] font-black text-emerald-300 animate-float-fade flex items-center gap-0.5 whitespace-nowrap">
+                  <ArrowUp className="w-2.5 h-2.5" />+{formatCurrency(recentGain)}
+                </span>
+              )}
+            </div>
+            <span className={`font-bold text-sm transition-colors ${isPulsing ? 'text-emerald-300 font-black' : 'text-sky-400'}`}>
+              {formatCurrency(profile.portfolioValue)}
+            </span>
           </div>
 
           <div className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/30 px-3.5 py-1.5 rounded-lg flex flex-col shadow-sm">
@@ -127,6 +172,21 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
 
         {/* Right: Controls & Advance Week */}
         <div className="flex items-center gap-2">
+          {/* PWA Install Button mounted in header */}
+          <PWAInstallButton />
+
+          {/* App Store & Google Play Publishing Hub Button */}
+          {onOpenPublishModal && (
+            <button
+              onClick={onOpenPublishModal}
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Open Google Play Store & Apple App Store Publishing Hub"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">App Stores</span>
+            </button>
+          )}
+
           <button
             onClick={onToggleMute}
             className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition"
@@ -220,6 +280,19 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
           >
             <Heart className="w-4 h-4" />
             <span>High Society & Romance</span>
+          </button>
+
+          <button
+            onClick={() => onSelectTab('ARENA')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold tracking-wide transition shrink-0 ${
+              activeTab === 'ARENA'
+                ? 'bg-gradient-to-r from-rose-500/25 via-indigo-500/25 to-amber-500/25 text-rose-300 border border-rose-500/50 shadow-md'
+                : 'text-rose-400/90 hover:text-rose-200 hover:bg-slate-900 border border-rose-500/20'
+            }`}
+          >
+            <Swords className="w-4 h-4 text-rose-400" />
+            <span className="font-bold">Arena (Multiplayer)</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" title="Live Server Online" />
           </button>
         </div>
       </nav>

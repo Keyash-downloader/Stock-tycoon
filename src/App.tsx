@@ -16,6 +16,8 @@ import { ScandalPRModal } from './components/ScandalPRModal';
 import { WeekSummaryModal } from './components/WeekSummaryModal';
 import { GameOverModal } from './components/GameOverModal';
 import { PriceAlertToast } from './components/PriceAlertToast';
+import { MultiplayerArena } from './components/MultiplayerArena';
+import { StorePublishModal } from './components/StorePublishModal';
 
 import { 
   TraderProfile, 
@@ -145,7 +147,7 @@ export default function App() {
   const [romancePartners, setRomancePartners] = useState(INITIAL_ROMANCE_PARTNERS);
   const [sectorMastery, setSectorMastery] = useState<Record<Sector, SectorMastery>>(INITIAL_SECTOR_MASTERY);
   
-  const [activeTab, setActiveTab] = useState<'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE'>('TRADING');
+  const [activeTab, setActiveTab] = useState<'TRADING' | 'CAREER' | 'EMPIRE' | 'WALLRICH' | 'STREETX' | 'ROMANCE' | 'ARENA'>('TRADING');
   const [currentBriefing, setCurrentBriefing] = useState<MarketBriefing>(INITIAL_BRIEFING);
   const [briefingArchive, setBriefingArchive] = useState<MarketBriefing[]>([]);
   const [activeScandal, setActiveScandal] = useState<typeof INITIAL_SCANDALS[0] | null>(null);
@@ -183,6 +185,7 @@ export default function App() {
   } | null>(null);
 
   const [isMuted, setIsMuted] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   const toggleMute = () => {
     const next = !isMuted;
@@ -649,6 +652,9 @@ export default function App() {
       } else if (e.code === 'KeyH') {
         setActiveTab('ROMANCE');
         sounds.playClick();
+      } else if (e.code === 'KeyM' || e.code === 'KeyA') {
+        setActiveTab('ARENA');
+        sounds.playClick();
       }
     };
 
@@ -910,14 +916,21 @@ export default function App() {
   // Render Title Screen
   if (profile.gameStatus === 'TITLE') {
     return (
-      <TitleScreen
-        onStartGame={() => {
-          setProfile((prev) => ({ ...prev, gameStatus: 'PLAYING' }));
-          sounds.playBell();
-        }}
-        isMuted={isMuted}
-        onToggleMute={toggleMute}
-      />
+      <>
+        <TitleScreen
+          onStartGame={() => {
+            setProfile((prev) => ({ ...prev, gameStatus: 'PLAYING' }));
+            sounds.playBell();
+          }}
+          isMuted={isMuted}
+          onToggleMute={toggleMute}
+          onOpenPublishModal={() => setIsPublishModalOpen(true)}
+        />
+        <StorePublishModal
+          isOpen={isPublishModalOpen}
+          onClose={() => setIsPublishModalOpen(false)}
+        />
+      </>
     );
   }
 
@@ -931,6 +944,7 @@ export default function App() {
         onAdvanceWeek={handleAdvanceWeek}
         isMuted={isMuted}
         onToggleMute={toggleMute}
+        onOpenPublishModal={() => setIsPublishModalOpen(true)}
       />
 
       {/* Main Game Shell Viewport */}
@@ -1021,6 +1035,13 @@ export default function App() {
             onSelectPartner={(partnerId) => setProfile((p) => ({ ...p, romancePartnerId: partnerId }))}
           />
         )}
+
+        {activeTab === 'ARENA' && (
+          <MultiplayerArena
+            playerDefaultName={profile.name}
+            playerFirmTitle={profile.firmTitle}
+          />
+        )}
       </main>
 
       {/* Week Settlement Modal */}
@@ -1063,6 +1084,12 @@ export default function App() {
         notifications={alertNotifications}
         onDismiss={handleDismissNotification}
         onSelectStock={handleSelectStockFromAlert}
+      />
+
+      {/* App Store & Google Play Publishing Hub Modal */}
+      <StorePublishModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
       />
 
       {/* Bottom Global Status Bar */}

@@ -45,3 +45,81 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Portfolio value green pulse animation for weekly settlement gain */
+@keyframes portfolioPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8);
+    border-color: rgba(52, 211, 153, 0.9);
+    background-color: rgba(16, 185, 129, 0.25);
+  }
+  30% {
+    transform: scale(1.06);
+    box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.6);
+    border-color: rgba(110, 231, 183, 1);
+    background-color: rgba(16, 185, 129, 0.35);
+  }
+  65% {
+    transform: scale(1.02);
+    box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.35);
+    border-color: rgba(52, 211, 153, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    border-color: rgb(30, 41, 59);
+    background-color: rgba(15, 23, 42, 0.8);
+  }
+}
+
+.animate-portfolio-pulse {
+  animation: portfolioPulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes floatFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-fade {
+  animation: floatFadeUp 1.6s ease-out forwards;
+}
+
+/* Mobile App Native Shell & Safe Area Insets for iOS & Android */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+}
+
+/* Prevent gray touch callout and selection in native mobile app view */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+

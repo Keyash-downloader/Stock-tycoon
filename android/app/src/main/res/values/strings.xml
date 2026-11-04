@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Spotlight Stocks: Market Titan</string>
+    <string name="title_activity_main">Spotlight Stocks: Market Titan</string>
+    <string name="package_name">com.spotlightdream.stocks</string>
+    <string name="custom_url_scheme">com.spotlightdream.stocks</string>
+</resources>
